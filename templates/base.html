@@ -18,9 +18,20 @@
   <nav class="navbar" role="navigation">
     <div class="navbar-brand">
       <a class="navbar-item" href="{{url_for('index')}}"> MCPS Scheduler V2 </a>
+      <a
+        role="button"
+        class="navbar-burger"
+        aria-label="menu"
+        aria-expanded="false"
+      >
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </a>
     </div>
-    <div class="navbar-end">
-      <div class="navbar-start">
+
+    <div class="navbar-menu">
+      <div class="navbar-end">
         <a class="navbar-item" href="{{url_for('index')}}">Schedule</a>
         <a class="navbar-item" href="{{url_for('directory')}}"
           >Course Directory</a
@@ -40,6 +51,16 @@
     </div>
   </section>
   {% block content %} {% endblock %}
+
+  <script>
+    const burger = document.querySelector(".navbar-burger");
+    const menu = document.querySelector(".navbar-menu");
+
+    burger.addEventListener("click", () => {
+      burger.classList.toggle("is-active");
+      menu.classList.toggle("is-active");
+    });
+  </script>
 
   <footer class="footer">
     <div class="content has-text-centered">
