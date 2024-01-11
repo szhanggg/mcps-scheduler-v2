@@ -50,8 +50,11 @@
         <div>
           {% for student in class.students %}
           <div class="card">
-            <div class="card-content">
-              <p class="is-size-4">{{ student }}</p>
+            <div
+              class="card-content"
+              style="padding-top: 0.5rem; padding-bottom: 0.5rem"
+            >
+              <p class="is-size-6">{{ student }}</p>
             </div>
           </div>
           {% endfor %}
