@@ -1,0 +1,98 @@
+{% extends "base.html" %} {% block content %}
+
+<section class="section">
+  <div class="container">
+    {% if not logged_in %}
+    <form class="box" onsubmit="event.preventDefault(); login();">
+      <div class="field">
+        <label class="label">Student ID</label>
+        <div class="control">
+          <input class="input" type="text" placeholder="Student ID" id="sid" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Password</label>
+        <div class="control">
+          <input
+            class="input"
+            type="password"
+            placeholder="Password"
+            id="password"
+          />
+        </div>
+      </div>
+      <div class="field">
+        <div class="control">
+          <button class="button is-primary" type="submit" id="loginButton">
+            See Schedule
+          </button>
+          {% if error %}
+          <p class="help is-danger">{{ error }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+    {% else %}
+    <h1 class="title">Schedule for {{ data.nname }}!</h1>
+    <div class="columns is-multiline">
+      {% for class in data.classes %}
+      <div class="column is-one-third-desktop">
+        <div class="card">
+          <div class="card-content">
+            <p class="title is-size-4">{{ class.period }}: {{ class.name }}</p>
+            <p class="subtitle">{{ class.teacher }}</p>
+          </div>
+        </div>
+        <div>
+          {% for student in class.students %}
+          <div class="card">
+            <div class="card-content">
+              <p class="is-size-4">{{ student }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<script>
+  function login() {
+    var sid = document.getElementById("sid").value;
+    var password = document.getElementById("password").value;
+
+    var data = {
+      sid: sid,
+      password: password,
+    };
+
+    var loginButton = document.getElementById("loginButton");
+    loginButton.classList.add("is-loading");
+
+    fetch("/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (data) {
+        document.open();
+        document.write(data);
+        document.close();
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  }
+</script>
+
+{% endblock %}
