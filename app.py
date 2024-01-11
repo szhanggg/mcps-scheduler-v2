@@ -10,7 +10,7 @@ def getData(sv, sid):
     data = {}
     data['sid'] = sid
 
-    schedule = sv.get_schedule()
+    schedule = sv.get_schedule(1)
     if "RT_ERROR" in schedule.keys():
         return {"error": "Invalid Credentials"}
 
