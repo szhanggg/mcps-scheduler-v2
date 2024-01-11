@@ -38,7 +38,11 @@ def getData(sv, sid):
     sinfo = sv.get_student_info()
     studentInfo = sinfo['StudentInfo']
     sname = studentInfo['FormattedName']['$']
-    nname = studentInfo['NickName']['$']
+    # Only get nname if it exists
+    nname = sname
+    if 'NickName' in studentInfo.keys():
+        if '$' in studentInfo['NickName'].keys():
+            nname = studentInfo['NickName']['$']
 
     data['sname'] = sname
     data['nname'] = nname
