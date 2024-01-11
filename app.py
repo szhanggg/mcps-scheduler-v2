@@ -158,6 +158,10 @@ def getClassList():
     cur.close()
     db_pool.putconn(conn)
     # return json with classes
+    # remove all period 0 classes
+    classes = [i for i in classes if i[1] != "0" and i[1] != "10"]
+    # sort classes by period then name
+    classes.sort(key=lambda x: (x[1], x[0]))
     return {'classes': classes}
 
 @app.route('/login', methods=['POST'])
