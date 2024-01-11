@@ -22,12 +22,16 @@ def getData(sv, sid):
 
     data['classes'] = []
 
+    school_info = sv.get_school_info()
+    schoolName = school_info['StudentSchoolInfoListing']['@School']
+
     for i in classListing:
         curClass = {}
         curClass['name'] = i['@CourseTitle']
         curClass['period'] = str(i['@Period'])
         curClass['room'] = str(i['@RoomName'])
         curClass['teacher'] = i['@Teacher']
+        curClass['school'] = schoolName
 
         data['classes'].append(curClass)
      
@@ -67,20 +71,21 @@ def updateData(data):
         newData['classes'][newData['classes'].index(i)]['students'] = unformatStudentList(students)
     
     conn.commit()
+    cur.close()
     db_pool.putconn(conn)
     return newData
 
 def formatClassList(classes):
     classList = []
     for i in classes:
-        classList.append(i['name'] + '|~|' + i['period'] + '|~|' + i['room'] + '|~|' + i['teacher'])
+        classList.append(i['name'] + '|~|' + i['period'] + '|~|' + i['room'] + '|~|' + i['teacher'] + '|~|' + i['school'])
     return '~|~'.join(classList)
 
 def unformatClassList(classes):
     classList = []
     for i in classes.split('~|~'):
         classInfo = i.split('|~|')
-        classList.append({'name': classInfo[0], 'period': classInfo[1], 'room': classInfo[2], 'teacher': classInfo[3]})
+        classList.append({'name': classInfo[0], 'period': classInfo[1], 'room': classInfo[2], 'teacher': classInfo[3], 'school': classInfo[4]})
     return classList
 
 def formatStudentList(students):
@@ -90,10 +95,10 @@ def unformatStudentList(students):
     return students.split('~|~')
 
 def deleteStudentFromClass(sname, classInfo, conn, cur):
-    cur.execute("SELECT students FROM classes WHERE name = %s AND period = %s AND room = %s AND teacher = %s", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher']))
+    cur.execute("SELECT students FROM classes WHERE name = %s AND period = %s AND room = %s AND teacher = %s AND school = %s", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], classInfo['school']))
     found = cur.fetchone()
     if not found:
-        cur.execute("INSERT INTO classes (name, period, room, teacher, students) VALUES (%s, %s, %s, %s, %s)", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], sname))
+        cur.execute("INSERT INTO classes (name, period, room, teacher, students, school) VALUES (%s, %s, %s, %s, %s, %s)", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], sname, classInfo['school']))
         conn.commit()
         return
     
@@ -101,15 +106,15 @@ def deleteStudentFromClass(sname, classInfo, conn, cur):
 
     if sname in students:
         students.remove(sname)
-        cur.execute("UPDATE classes SET students = %s WHERE name = %s AND period = %s AND room = %s AND teacher = %s", (formatStudentList(students), classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher']))
+        cur.execute("UPDATE classes SET students = %s WHERE name = %s AND period = %s AND room = %s AND teacher = %s AND school = %s", (formatStudentList(students), classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], classInfo['school']))
         conn.commit()
         return
 
 def addStudentToClass(sname, classInfo, conn, cur):
-    cur.execute("SELECT students FROM classes WHERE name = %s AND period = %s AND room = %s AND teacher = %s", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher']))
+    cur.execute("SELECT students FROM classes WHERE name = %s AND period = %s AND room = %s AND teacher = %s AND school = %s", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], classInfo['school']))
     found = cur.fetchone()
     if not found:
-        cur.execute("INSERT INTO classes (name, period, room, teacher, students) VALUES (%s, %s, %s, %s, %s)", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], sname))
+        cur.execute("INSERT INTO classes (name, period, room, teacher, students, school) VALUES (%s, %s, %s, %s, %s, %s)", (classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], sname, classInfo['school']))
         conn.commit()
         return sname
 
@@ -118,7 +123,7 @@ def addStudentToClass(sname, classInfo, conn, cur):
     if sname not in students:
         students.append(sname)
         formatted_students = formatStudentList(students)
-        cur.execute("UPDATE classes SET students = %s WHERE name = %s AND period = %s AND room = %s AND teacher = %s", (formatted_students, classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher']))
+        cur.execute("UPDATE classes SET students = %s WHERE name = %s AND period = %s AND room = %s AND teacher = %s AND school = %s", (formatted_students, classInfo['name'], classInfo['period'], classInfo['room'], classInfo['teacher'], classInfo['school']))
         conn.commit()
         return formatted_students
     
@@ -131,7 +136,29 @@ def index():
 
 @app.route('/directory')
 def directory():
-    return render_template('directory.html')
+    # Get a list of all schools
+    conn = db_pool.getconn()
+    cur = conn.cursor()
+    # Get all the unique school attributes from the classes table
+    cur.execute("SELECT DISTINCT school FROM classes")
+    schools = cur.fetchall()
+    # Covnert to list of strings
+    schools = [i[0] for i in schools]
+    cur.close()
+    db_pool.putconn(conn)
+    return render_template('directory.html', schools=schools)
+
+@app.route('/getClassList')
+def getClassList():
+    school = request.args.get('school')
+    conn = db_pool.getconn()
+    cur = conn.cursor()
+    cur.execute("SELECT name, period, room, teacher FROM classes WHERE school = %s", (school,))
+    classes = cur.fetchall()
+    cur.close()
+    db_pool.putconn(conn)
+    # return json with classes
+    return {'classes': classes}
 
 @app.route('/login', methods=['POST'])
 def login():

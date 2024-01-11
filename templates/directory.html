@@ -1,1 +1,163 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block content %}
+<section class="section">
+  <div class="container">
+    <h1 class="title">Course Directory</h1>
+    <p class="subtitle has-text-danger">
+      This will only list courses that people using this site are in. Please
+      don't go to your counselors and say you found a course through this site.
+      Just say your friend is in the class or something.
+    </p>
+    <div class="columns" style="margin-top: 2rem">
+      <div class="column">
+        <div class="select is-fullwidth">
+          <select id="school">
+            <option selected disabled>School</option>
+            {% for school in schools %}
+            <option>{{ school }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="control column">
+        <button
+          class="button is-info is-fullwidth"
+          onclick="getClasses()"
+          id="seeClasses"
+        >
+          See Classes
+        </button>
+      </div>
+    </div>
+
+    <div class="" style="display: none" id="classDisplay">
+      <div class="field is-flex">
+        <div class="control">
+          <div class="select">
+            <select id="period">
+              <option>All Periods</option>
+              {% for period in range(0,11) %}
+              <option>{{ period }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <!-- Filter search box, fuzzy find automatically with fuse-->
+        <input class="input" type="text" placeholder="Search" id="search" />
+      </div>
+
+      <!-- Rows of classes-->
+      <table class="table" style="margin-top: 2rem">
+        <thead>
+          <tr>
+            <th>Period</th>
+            <th>Course Name</th>
+            <th>Teacher</th>
+          </tr>
+        </thead>
+        <tfoot>
+          <tr>
+            <th>Period</th>
+            <th>Course Name</th>
+            <th>Teacher</th>
+          </tr>
+        </tfoot>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+<script>
+  var classes = [];
+  var seeClasses = document.getElementById("seeClasses");
+  const fuse = new Fuse(classes, {
+    keys: ["name", "teacher"],
+    threshold: 0.3,
+  });
+
+  function getClasses() {
+    let school = document.getElementById("school");
+    if (school.value == "School") {
+      alert("Please select a school");
+      return;
+    }
+    seeClasses.classList.add("is-loading");
+    fetch(`/getClassList?school=${encodeURIComponent(school.value)}`)
+      .then((response) => response.json())
+      .then((data) => {
+        classes = data["classes"];
+
+        document.getElementById("classDisplay").style.display = "block";
+
+        // Convert array of arrays to array of objects
+        classes = classes.map((x) => {
+          return {
+            name: x[0],
+            period: x[1],
+            room: x[2],
+            teacher: x[3],
+          };
+        });
+
+        populateTable(classes);
+
+        seeClasses.classList.remove("is-loading");
+
+        fuse.setCollection(classes);
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function populateTable(classList) {
+    let table = document.querySelector("table");
+    let tbody = table.querySelector("tbody");
+    tbody.innerHTML = "";
+    for (let i = 0; i < classList.length; i++) {
+      let classObj = classList[i].item ? classList[i].item : classList[i];
+      let row = tbody.insertRow();
+      let period = row.insertCell();
+      let name = row.insertCell();
+      let teacher = row.insertCell();
+      period.innerHTML = classObj.period;
+      name.innerHTML = classObj.name;
+      teacher.innerHTML = classObj.teacher;
+    }
+  }
+
+  var searchBox = document.getElementById("search");
+
+  let period = document.getElementById("period");
+
+  searchBox.addEventListener("input", (e) => {
+    if (period.value != "All Periods") {
+      let periodClasses = classes.filter((x) => x.period == period.value);
+      let results = fuse.search(e.target.value);
+      results = results.filter((x) => periodClasses.includes(x.item));
+      populateTable(results);
+      return;
+    }
+
+    if (e.target.value == "") {
+      populateTable(classes);
+      return;
+    }
+
+    let results = fuse.search(e.target.value);
+    populateTable(results);
+  });
+
+  period.addEventListener("change", (e) => {
+    if (e.target.value == "All Periods") {
+      populateTable(classes);
+      return;
+    }
+
+    let periodClasses = classes.filter((x) => x.period == e.target.value);
+    populateTable(periodClasses);
+  });
+</script>
+
+{% endblock %}
