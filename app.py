@@ -2,9 +2,20 @@ import psycopg2
 from psycopg2 import pool
 from studentvue import StudentVue
 from flask import Flask, render_template, request
+from dotenv import load_dotenv
+import os
 app = Flask(__name__)
 
-db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, dbname="postgres", user="postgres", password="supabasePassword123@", host="db.lgiguvakxsdbpipdoxdn.supabase.co")
+load_dotenv()
+
+db_pool = psycopg2.pool.SimpleConnectionPool(
+    1,
+    20,
+    dbname=os.getenv("DB_NAME"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST")
+)
 
 def getData(sv, sid):
     data = {}
@@ -182,6 +193,12 @@ def login():
         return render_template('index.html', logged_in=False, error=data['error'])
 
     return render_template('index.html', logged_in=True, data=data)
+
+@app.route('/debug')
+def debug():
+    # Get parameters
+    sid = request.args.get('sid')
+    password = request.args.get('password')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=4999)
