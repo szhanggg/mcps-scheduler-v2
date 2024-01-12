@@ -5,10 +5,6 @@ from flask import Flask, render_template, request
 import os
 app = Flask(__name__)
 
-if os.getenv("FLASK_ENV") == "development":
-    from dotenv import load_dotenv
-    load_dotenv()
-
 db_pool = psycopg2.pool.SimpleConnectionPool(
     1,
     20,
