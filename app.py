@@ -2,11 +2,12 @@ import psycopg2
 from psycopg2 import pool
 from studentvue import StudentVue
 from flask import Flask, render_template, request
-from dotenv import load_dotenv
 import os
 app = Flask(__name__)
 
-load_dotenv()
+if os.getenv("FLASK_ENV") == "development":
+    from dotenv import load_dotenv
+    load_dotenv()
 
 db_pool = psycopg2.pool.SimpleConnectionPool(
     1,
